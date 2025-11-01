@@ -6,7 +6,7 @@
   "Author": "Mayank",
   "Version": "1.0.0",
   "Language": "python",
-
+  "Website": "https://github.com/Mayank2002-dev/Flow.Launcher.Plugin.Gemini",
   "IcoPath": "Images/app.png",
   "ExecuteFileName": "main.py"
 }
