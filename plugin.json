@@ -1,0 +1,12 @@
+{
+  "ID": "a8e4f5b2-1c3d-4e5f-9a7b-2d3e4f5a6b7c",
+  "ActionKeyword": "gemini",
+  "Name": "Gemini",
+  "Description": "Plugin to use Google's Gemini AI in Flow Launcher",
+  "Author": "Mayank",
+  "Version": "1.0.0",
+  "Language": "python",
+
+  "IcoPath": "Images/app.png",
+  "ExecuteFileName": "main.py"
+}

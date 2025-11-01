@@ -1,0 +1,60 @@
+body:
+  - type: passwordBox
+    attributes:
+      name: api_key
+      label: "API Key:"
+      defaultValue: ""
+      description: Google Gemini API Key (get from https://aistudio.google.com/app/apikey)
+  - type: dropdown
+    attributes:
+      name: model
+      label: "Model:"
+      defaultValue: gemini-2.0-flash-exp
+      options:
+        - gemini-2.0-flash-exp
+        - gemini-1.5-flash
+        - gemini-1.5-flash-8b
+        - gemini-1.5-pro
+      description: Gemini model to use
+  - type: input
+    attributes:
+      name: prompt_stop
+      label: "Prompt stop:"
+      defaultValue: "||"
+      description: Characters to indicate end of prompt
+  - type: input
+    attributes:
+      name: default_prompt
+      label: "Default system prompt:"
+      defaultValue: "normal"
+      description: Default keyword that will be looked up in the system_messages.csv file
+  - type: checkbox
+    attributes:
+      name: save_conversation
+      label: "Save conversation:"
+      defaultValue: "false"
+      description: Check to save the conversation (context will be maintained)
+  - type: input
+    attributes:
+      name: max_tokens
+      label: "Max tokens:"
+      defaultValue: "1000"
+      description: Maximum number of tokens in the response
+  - type: input
+    attributes:
+      name: temperature
+      label: "Temperature:"
+      defaultValue: "0.7"
+      description: Controls randomness (0.0-2.0, higher = more random)
+  - type: checkbox
+    attributes:
+      name: use_proxy
+      label: "Use proxy:"
+      defaultValue: "false"
+      description: Enable if you need to use a proxy server
+  - type: input
+    attributes:
+      name: proxy_url
+      label: "Proxy URL:"
+      defaultValue: ""
+      description: "Proxy server URL (e.g., http://proxy.example.com:8080)"
