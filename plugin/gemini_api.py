@@ -7,17 +7,27 @@ import os
 class GeminiAPI:
     """Handler for Google Gemini API interactions"""
     
-    def __init__(self, settings):
-        """Initialize Gemini API with settings"""
-        self.settings = settings
-        self.api_key = settings.get("api_key", "")
-        self.model_name = settings.get("model", "gemini-2.0-flash-exp")
-        self.max_tokens = int(settings.get("max_tokens", "1000"))
-        self.temperature = float(settings.get("temperature", "0.7"))
+    def __init__(self, settings_dict):
+        """Initialize Gemini API with settings dictionary"""
+        # Handle both Settings object and dict
+        if hasattr(settings_dict, 'get'):
+            self.api_key = settings_dict.get("api_key", "")
+            self.model_name = settings_dict.get("model", "gemini-2.0-flash-exp")
+            self.max_tokens = int(settings_dict.get("max_tokens", "1000"))
+            self.temperature = float(settings_dict.get("temperature", "0.7"))
+            use_proxy = settings_dict.get("use_proxy", "false")
+            proxy_url = settings_dict.get("proxy_url", "")
+        else:
+            # Fallback to dict access
+            self.api_key = settings_dict.get("api_key", "")
+            self.model_name = settings_dict.get("model", "gemini-2.0-flash-exp")
+            self.max_tokens = int(settings_dict.get("max_tokens", 1000))
+            self.temperature = float(settings_dict.get("temperature", 0.7))
+            use_proxy = settings_dict.get("use_proxy", False)
+            proxy_url = settings_dict.get("proxy_url", "")
         
         # Configure proxy if enabled
-        if settings.get("use_proxy") == "true":
-            proxy_url = settings.get("proxy_url", "")
+        if use_proxy == "true" or use_proxy is True:
             if proxy_url:
                 os.environ['HTTP_PROXY'] = proxy_url
                 os.environ['HTTPS_PROXY'] = proxy_url

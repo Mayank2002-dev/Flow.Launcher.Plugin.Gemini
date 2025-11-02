@@ -5,8 +5,6 @@ from flox import Flox
 import os
 import tempfile
 import csv
-from plugin.gemini_api import GeminiAPI
-from plugin.settings import Settings
 
 class Gemini(Flox):
     """Flow Launcher plugin for Google Gemini AI"""
@@ -18,31 +16,48 @@ class Gemini(Flox):
             "Images", 
             "app.png"
         )
-        self.settings = Settings(self.settings_path)
         self.gemini_api = None
         self.conversation_history = []
         self.last_response = ""
-        
+    
     def query(self, query):
         """Handle query from Flow Launcher"""
         try:
-            # Get settings
+            # Import here to avoid issues at startup
+            from gemini_api import GeminiAPI
+            
+            # Get settings from Flox
             api_key = self.settings.get("api_key", "")
             prompt_stop = self.settings.get("prompt_stop", "||")
             
             # Check if API key is set
             if not api_key:
-                return self.show_error("Please set your Gemini API key in settings")
+                self.add_item(
+                    title="Please set your Gemini API key",
+                    subtitle="Go to Settings > Plugins > Gemini to configure",
+                    icon=self.icon_path
+                )
+                return
             
             # Check if query ends with stop keyword
             if not query.endswith(prompt_stop):
-                return self.show_message(
-                    f"Type your prompt and end with '{prompt_stop}' to submit",
-                    "Example: what is AI? {prompt_stop}".replace("{prompt_stop}", prompt_stop)
+                self.add_item(
+                    title=f"Type your prompt and end with '{prompt_stop}' to submit",
+                    subtitle=f"Example: what is AI? {prompt_stop}",
+                    icon=self.icon_path
                 )
+                return
             
             # Remove stop keyword from query
             query = query[:-len(prompt_stop)].strip()
+            
+            if not query:
+                self.add_item(
+                    title="Please enter a prompt",
+                    subtitle=f"Type your question before {prompt_stop}",
+                    icon=self.icon_path
+                )
+                return
             
             # Parse system prompt keyword
             system_prompt = self.get_system_prompt(query)
@@ -54,9 +69,6 @@ class Gemini(Flox):
             # Initialize Gemini API if needed
             if not self.gemini_api:
                 self.gemini_api = GeminiAPI(self.settings)
-            
-            # Show loading message
-            results = [self.show_loading()]
             
             # Get response from Gemini
             response = self.gemini_api.get_response(
@@ -74,51 +86,45 @@ class Gemini(Flox):
             self.last_response = response
             
             # Return results with actions
-            results = [
-                {
-                    "Title": "Response from Gemini",
-                    "SubTitle": response[:100] + "..." if len(response) > 100 else response,
-                    "IcoPath": self.icon_path,
-                    "JsonRPCAction": {
-                        "method": "show_full_response",
-                        "parameters": []
-                    }
-                },
-                {
-                    "Title": "Copy to clipboard",
-                    "SubTitle": "Copy the full response to clipboard",
-                    "IcoPath": self.icon_path,
-                    "JsonRPCAction": {
-                        "method": "copy_to_clipboard",
-                        "parameters": []
-                    }
-                },
-                {
-                    "Title": "Open in text file",
-                    "SubTitle": "Open the response in a new text file",
-                    "IcoPath": self.icon_path,
-                    "JsonRPCAction": {
-                        "method": "open_in_file",
-                        "parameters": []
-                    }
-                }
-            ]
+            self.add_item(
+                title="Response from Gemini",
+                subtitle=response[:100] + "..." if len(response) > 100 else response,
+                icon=self.icon_path,
+                method=self.show_full_response,
+                parameters=[]
+            )
+            
+            self.add_item(
+                title="Copy to clipboard",
+                subtitle="Copy the full response to clipboard",
+                icon=self.icon_path,
+                method=self.copy_to_clipboard,
+                parameters=[]
+            )
+            
+            self.add_item(
+                title="Open in text file",
+                subtitle="Open the response in a new text file",
+                icon=self.icon_path,
+                method=self.open_in_file,
+                parameters=[]
+            )
             
             if self.settings.get("save_conversation") == "true":
-                results.append({
-                    "Title": "Clear conversation history",
-                    "SubTitle": "Start a new conversation",
-                    "IcoPath": self.icon_path,
-                    "JsonRPCAction": {
-                        "method": "clear_history",
-                        "parameters": []
-                    }
-                })
-            
-            return results
+                self.add_item(
+                    title="Clear conversation history",
+                    subtitle="Start a new conversation",
+                    icon=self.icon_path,
+                    method=self.clear_history,
+                    parameters=[]
+                )
             
         except Exception as e:
-            return self.show_error(f"Error: {str(e)}")
+            self.add_item(
+                title="Error",
+                subtitle=str(e),
+                icon=self.icon_path
+            )
     
     def get_system_prompt(self, query):
         """Get system prompt based on keyword in query"""
@@ -160,23 +166,30 @@ class Gemini(Flox):
     
     def show_full_response(self):
         """Show full response in Flow Launcher"""
-        return [
-            {
-                "Title": self.last_response,
-                "SubTitle": "Full response from Gemini",
-                "IcoPath": self.icon_path,
-                "JsonRPCAction": {
-                    "method": "copy_to_clipboard",
-                    "parameters": []
-                }
-            }
-        ]
+        self.add_item(
+            title=self.last_response,
+            subtitle="Full response from Gemini (click to copy)",
+            icon=self.icon_path,
+            method=self.copy_to_clipboard,
+            parameters=[]
+        )
     
     def copy_to_clipboard(self):
         """Copy response to clipboard"""
-        import pyperclip
-        pyperclip.copy(self.last_response)
-        return [self.show_message("Copied!", "Response copied to clipboard")]
+        try:
+            import pyperclip
+            pyperclip.copy(self.last_response)
+            self.add_item(
+                title="Copied!",
+                subtitle="Response copied to clipboard",
+                icon=self.icon_path
+            )
+        except Exception as e:
+            self.add_item(
+                title="Error",
+                subtitle=f"Failed to copy: {str(e)}",
+                icon=self.icon_path
+            )
     
     def open_in_file(self):
         """Open response in a text file"""
@@ -189,40 +202,26 @@ class Gemini(Flox):
             # Open file with default text editor
             os.startfile(temp_path)
             
-            return [self.show_message("Opened!", "Response opened in text file")]
+            self.add_item(
+                title="Opened!",
+                subtitle="Response opened in text file",
+                icon=self.icon_path
+            )
         except Exception as e:
-            return self.show_error(f"Error opening file: {str(e)}")
+            self.add_item(
+                title="Error",
+                subtitle=f"Failed to open file: {str(e)}",
+                icon=self.icon_path
+            )
     
     def clear_history(self):
         """Clear conversation history"""
         self.conversation_history = []
-        return [self.show_message("Cleared!", "Conversation history cleared")]
-    
-    def show_error(self, message):
-        """Show error message"""
-        return [
-            {
-                "Title": "Error",
-                "SubTitle": message,
-                "IcoPath": self.icon_path
-            }
-        ]
-    
-    def show_message(self, title, subtitle):
-        """Show a message"""
-        return {
-            "Title": title,
-            "SubTitle": subtitle,
-            "IcoPath": self.icon_path
-        }
-    
-    def show_loading(self):
-        """Show loading message"""
-        return {
-            "Title": "Loading...",
-            "SubTitle": "Waiting for Gemini response",
-            "IcoPath": self.icon_path
-        }
+        self.add_item(
+            title="Cleared!",
+            subtitle="Conversation history cleared",
+            icon=self.icon_path
+        )
 
 if __name__ == "__main__":
     Gemini()
